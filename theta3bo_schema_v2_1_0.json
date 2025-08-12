@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "theta3bo-config-2.1.0",
+  "type": "object",
+  "required": [
+    "parameters",
+    "objectives",
+    "batch_size",
+    "warm_start"
+  ],
+  "properties": {
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "bounds"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "continuous",
+              "periodic",
+              "categorical"
+            ]
+          },
+          "bounds": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "choices": {
+            "type": "array"
+          },
+          "sigma": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "encode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "magic_angle": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "softclip_c": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "categorical": {
+      "type": "object",
+      "properties": {
+        "embedding": {
+          "type": "boolean"
+        },
+        "dim": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "l2": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dropout": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.9
+        }
+      }
+    },
+    "acquisition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "qEI",
+            "qNEI",
+            "auto_qNEI_qEI"
+          ]
+        },
+        "noise_metric": {
+          "enum": [
+            "median_replicate_std_over_IQR"
+          ]
+        },
+        "hysteresis": {
+          "type": "object",
+          "properties": {
+            "enter_qEI": {
+              "type": "number",
+              "minimum": 0
+            },
+            "exit_qEI": {
+              "type": "number",
+              "minimum": 0
+            },
+            "consecutive": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "jitter": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "number",
+          "minimum": 0
+        },
+        "min": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max": {
+          "type": "number",
+          "minimum": 0
+        },
+        "growth": {
+          "type": "number",
+          "minimum": 1
+        }
+      }
+    },
+    "seeds": {
+      "type": "object",
+      "properties": {
+        "opt": {
+          "type": "integer"
+        },
+        "warmstart": {
+          "type": "integer"
+        },
+        "fantasy": {
+          "type": "integer"
+        }
+      }
+    },
+    "deterministic": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "cpu_only": {
+          "type": "boolean"
+        },
+        "blas_threads": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

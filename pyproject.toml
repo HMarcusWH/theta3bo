@@ -1,0 +1,11 @@
+[project]
+name = "theta3bo"
+version = "2.1.0"
+description = "θ‴ v2.1 metric + BO engine (skeleton)"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name="theta3bo", email="noreply@example.com"}]
+license = {text = "MIT"}
+
+[project.scripts]
+theta3bo = "theta3bo.cli:main"

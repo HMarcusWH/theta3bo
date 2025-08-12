@@ -1,0 +1,176 @@
+{
+  "parameters": [
+    {
+      "name": "theta",
+      "type": "periodic",
+      "bounds": [
+        0.9,
+        1.3
+      ],
+      "sigma": 0.05,
+      "encode": "sin_cos",
+      "magic_angle": 1.1
+    },
+    {
+      "name": "n",
+      "type": "continuous",
+      "bounds": [
+        0,
+        3000000000000.0
+      ],
+      "sigma": 200000000000.0
+    },
+    {
+      "name": "strain",
+      "type": "continuous",
+      "bounds": [
+        -0.5,
+        0.5
+      ],
+      "sigma": 0.2
+    },
+    {
+      "name": "substrate",
+      "type": "categorical",
+      "choices": [
+        "STO",
+        "LSAT",
+        "LAO",
+        "SLAO"
+      ],
+      "sigma": 1
+    }
+  ],
+  "softclip_c": 5,
+  "output_scaling": "zscore",
+  "likelihood": {
+    "type": "gaussian",
+    "robust": false,
+    "student_t_df": 4,
+    "huber_delta": 1.0
+  },
+  "anchor": {
+    "use": true,
+    "enabled": true,
+    "x_star": {
+      "theta": 1.1,
+      "n": 1400000000000.0,
+      "strain": 0,
+      "substrate": "STO"
+    },
+    "tau": 50,
+    "schedule": "exponential"
+  },
+  "kernel": {
+    "type": "ard_rbf",
+    "additive_groups": []
+  },
+  "categorical": {
+    "embedding": true,
+    "dim": 16,
+    "l2": 0.001,
+    "dropout": 0.1
+  },
+  "objectives": [
+    {
+      "name": "Tc_onset",
+      "goal": "maximize"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "meissner",
+      "type": "boolean",
+      "must_be": true
+    }
+  ],
+  "replicates": {
+    "min": 2,
+    "max": 5,
+    "adaptive": true
+  },
+  "batch_size": 8,
+  "warm_start": 64,
+  "acquisition": {
+    "type": "auto_qNEI_qEI",
+    "noise_metric": "median_replicate_std_over_IQR",
+    "hysteresis": {
+      "enter_qEI": 0.04,
+      "exit_qEI": 0.06,
+      "consecutive": 2
+    }
+  },
+  "acq_optimizer": {
+    "multistarts": 20,
+    "continuous": "LBFGS-B",
+    "categorical": "relax+round",
+    "log_best_start": true
+  },
+  "jitter": {
+    "base": 1e-06,
+    "min": 1e-12,
+    "max": 0.001,
+    "growth": 10.0
+  },
+  "async": {
+    "enabled": true,
+    "fantasize_pending": true
+  },
+  "safe_mode": {
+    "enabled": false,
+    "safety_margin": 1.0
+  },
+  "trust_region": {
+    "enabled": true,
+    "init_frac": 0.2,
+    "shrink_expand": [
+      0.8,
+      1.2
+    ],
+    "auto_reset_frac": 0.05
+  },
+  "nonstationarity": {
+    "time_feature": true,
+    "decay_lambda": 0.01,
+    "rolling_window": null
+  },
+  "scalability": {
+    "switch_n": 5000,
+    "switch_p": 100,
+    "backend": "auto"
+  },
+  "seeds": {
+    "opt": 1234,
+    "warmstart": 5678,
+    "fantasy": 9012
+  },
+  "deterministic": {
+    "enabled": false,
+    "cpu_only": true,
+    "blas_threads": 1
+  },
+  "failures": {
+    "policy": "infeasible_or_impute",
+    "max_retries": 2,
+    "cooldown_batches": 1
+  },
+  "privacy": {
+    "redaction": true,
+    "hash_salt_env": "THETA3_HASH_SALT",
+    "redact_fields": [
+      "user_id",
+      "keyword",
+      "counterparty"
+    ]
+  },
+  "training_priors": {
+    "log_lengthscale_std": 1.0,
+    "log_sigma_f_std": 1.0,
+    "log_sigma_n_loc": -2.0,
+    "log_sigma_n_std": 1.0
+  },
+  "validation": {
+    "schema": "v2.1.0",
+    "strict": true
+  }
+}
