@@ -155,11 +155,104 @@ class Theta3V2:
         self.anchor_enabled = bool(enabled)
 
     def validate_config(self, schema: dict):
-        # Minimal checker: ensure required fields exist; print diff-like hints
-        missing = []
-        for r in schema.get("required", []):
-            if r not in self.spec:
-                missing.append(r)
-        if missing:
-            raise ValueError(f"Config missing required fields: {missing}")
+        """
+        Lightweight JSON-schema style validation without the jsonschema dep.
+
+        We cover the features used by ``theta3bo_schema_v2_1_0.json``:
+        ``type`` (including unions), ``required``, ``properties``, ``items``,
+        ``enum``, ``minItems``, ``maxItems``, ``minimum`` and ``maximum``.  The
+        goal is to surface actionable error messages instead of a silent pass.
+        """
+
+        if not isinstance(schema, dict):
+            raise TypeError("Schema must be a dictionary")
+
+        errors = []
+
+        def _join_path(path, token):
+            if path == "$":
+                return f"$.{token}" if not token.startswith("[") else f"${token}"
+            return f"{path}.{token}" if not token.startswith("[") else f"{path}{token}"
+
+        def _type_matches(value, expected):
+            if expected == "object":
+                return isinstance(value, dict)
+            if expected == "array":
+                return isinstance(value, (list, tuple))
+            if expected == "string":
+                return isinstance(value, str)
+            if expected == "boolean":
+                return isinstance(value, bool)
+            if expected == "integer":
+                return isinstance(value, int) and not isinstance(value, bool)
+            if expected == "number":
+                return isinstance(value, (int, float)) and not isinstance(value, bool)
+            if expected == "null":
+                return value is None
+            return True
+
+        def _validate(node, sch, path="$"):
+            # Type checks --------------------------------------------------
+            t = sch.get("type")
+            if t is not None:
+                if not isinstance(t, (list, tuple)):
+                    t = [t]
+                if not any(_type_matches(node, expected) for expected in t):
+                    exp = " or ".join(map(str, t))
+                    errors.append(f"{path}: expected type {exp}, got {type(node).__name__}")
+                    return
+
+            if node is None:
+                return
+
+            # Enum --------------------------------------------------------
+            if "enum" in sch and node not in sch["enum"]:
+                errors.append(f"{path}: value {node!r} not in enum {sch['enum']}")
+                return
+
+            # Object ------------------------------------------------------
+            if isinstance(node, dict):
+                required = sch.get("required", [])
+                for key in required:
+                    if key not in node:
+                        errors.append(f"{path}: missing required field '{key}'")
+                props = sch.get("properties", {})
+                additional = sch.get("additionalProperties", True)
+                for key, val in node.items():
+                    if key in props:
+                        _validate(val, props[key], _join_path(path, key))
+                    elif isinstance(additional, dict):
+                        _validate(val, additional, _join_path(path, key))
+                    elif additional is False:
+                        errors.append(f"{path}: unexpected field '{key}'")
+                return
+
+            # Array -------------------------------------------------------
+            if isinstance(node, (list, tuple)):
+                min_items = sch.get("minItems")
+                if min_items is not None and len(node) < min_items:
+                    errors.append(f"{path}: expected at least {min_items} items, got {len(node)}")
+                max_items = sch.get("maxItems")
+                if max_items is not None and len(node) > max_items:
+                    errors.append(f"{path}: expected at most {max_items} items, got {len(node)}")
+                items_schema = sch.get("items")
+                if items_schema:
+                    for idx, item in enumerate(node):
+                        _validate(item, items_schema, _join_path(path, f"[{idx}]"))
+                return
+
+            # Numbers -----------------------------------------------------
+            if isinstance(node, (int, float)) and not isinstance(node, bool):
+                minimum = sch.get("minimum")
+                if minimum is not None and node < minimum:
+                    errors.append(f"{path}: value {node} < minimum {minimum}")
+                maximum = sch.get("maximum")
+                if maximum is not None and node > maximum:
+                    errors.append(f"{path}: value {node} > maximum {maximum}")
+
+        _validate(self.spec, schema, path="$")
+
+        if errors:
+            msg = "\n".join(errors)
+            raise ValueError(f"Config validation failed:\n{msg}")
         return True

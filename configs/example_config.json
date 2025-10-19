@@ -32,6 +32,10 @@
     {
       "name": "substrate",
       "type": "categorical",
+      "bounds": [
+        0,
+        3
+      ],
       "choices": [
         "STO",
         "LSAT",
