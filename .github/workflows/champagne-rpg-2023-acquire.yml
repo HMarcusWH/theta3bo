@@ -1,0 +1,51 @@
+name: Champagne RPG 2023 acquisition
+
+on:
+  push:
+    branches:
+      - chatgpt/champagne-rpg-2023-acquisition-20260928
+    paths:
+      - ".github/workflows/champagne-rpg-2023-acquire.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install geospatial dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas geopandas pyogrio shapely pyproj fiona
+
+      - name: Acquire and qualify same-year 2023 sources
+        run: |
+          python tools/champagne_rpg_acquire_2023.py
+
+      - name: Pack release
+        if: always()
+        run: |
+          if [ -d champagne_rpg_2023_output ]; then
+            tar -czf champagne_rpg_2023_output.tar.gz champagne_rpg_2023_output
+          fi
+
+      - name: Upload acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: champagne-rpg-2023-acquisition
+          path: |
+            champagne_rpg_2023_output
+            champagne_rpg_2023_output.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
